@@ -16,10 +16,15 @@ This README describes the application as it exists currently.
 | Authentication | Flask sessions and Werkzeug password hashing | Signup, login, logout, and protected user actions |
 | QR generation | `qrcode` 8.2 and Pillow | Server-generated UPI-style payment QR image |
 | Testing | pytest 8.3 | Backend route and business-logic tests |
-| Runtime | Flask development server / Gunicorn dependency | Local execution and application serving |
+| Runtime | Flask development server / Gunicorn | Local execution and container serving |
+| Containers | Docker | Production image with non-root user and Gunicorn |
+| Registry | GitHub Container Registry (GHCR) | Stores `ghcr.io/23c132-sairathna/freshcart` images |
+| CI/CD | GitHub Actions | Tests, Docker build, and GHCR push on `main` |
+| Hosting | Render | Web service from GHCR image with `/health` checks |
+| Monitoring | UptimeRobot + Render metrics/logs | External uptime on `/health` and host metrics |
 | Source control | Git and GitHub | Repository and version history |
 
-The current application does not include an active cloud deployment, Docker configuration, GitHub Actions workflow, Artifact Registry setup, or Cloud Run configuration.
+Deployment and monitoring steps are documented in [DEPLOY.md](DEPLOY.md).
 
 ## 2. Current Application Workflow
 
@@ -306,20 +311,44 @@ http://localhost:8080
 
 The application binds to `0.0.0.0` and reads the `PORT` environment variable when it is provided. The default local port is `8080`.
 
-## 10. Current Project Files
+## 10. Deploy, Registry, and Monitoring
 
-```text
-app.py                 Flask application, APIs, database setup, and business logic
-requirements.txt       Python dependencies
-static/app.js          Cart, authentication, checkout, payment, profile, and tracking UI logic
-static/styles.css      Application styling
-templates/index.html   Main Jinja-rendered page and dialogs
-tests/test_app.py      Backend automated tests
-README.md              Current project documentation
-.gitignore             Local database, environment, cache, and virtual environment exclusions
+FreshCart is packaged with Docker, published to **GitHub Container Registry (GHCR)**, deployed on **Render**, and monitored with **UptimeRobot** using the `/health` endpoint.
+
+See **[DEPLOY.md](DEPLOY.md)** for:
+
+- GHCR image tags and making the package public
+- Render Blueprint deploy from [`render.yaml`](render.yaml)
+- Health checks, Render logs/metrics, and UptimeRobot setup
+- Assignment screenshot checklist
+
+Local container smoke test:
+
+```bash
+docker build -t freshcart:local .
+docker run --rm -p 8080:8080 -e SECRET_KEY=local-dev freshcart:local
+curl -sS http://127.0.0.1:8080/health
 ```
 
-## 11. Possible Future Additions
+## 11. Current Project Files
+
+```text
+app.py                      Flask application, APIs, database setup, and business logic
+requirements.txt            Python dependencies
+Dockerfile                  Production image (python:3.12-slim, Gunicorn, non-root)
+.dockerignore               Build context exclusions
+render.yaml                 Render Blueprint (GHCR image + /health)
+.github/workflows/ci-cd.yml Tests, Docker build, GHCR push on main
+static/app.js               Cart, authentication, checkout, payment, profile, and tracking UI logic
+static/styles.css           Application styling
+templates/index.html        Main Jinja-rendered page and dialogs
+tests/test_app.py           Backend automated tests
+DEPLOY.md                   Deploy and monitoring guide
+README.md                   Current project documentation
+.gitignore                  Local database, environment, keys, and cache exclusions
+```
+
+## 12. Possible Future Additions
 
 - Real Razorpay, Stripe, or another production payment gateway
 - Actual UPI payment verification through a payment provider
@@ -332,6 +361,4 @@ README.md              Current project documentation
 - PostgreSQL for production persistence
 - Email, SMS, or WhatsApp order notifications
 - Role-based admin authentication
-- Cloud deployment and monitoring
-- CI/CD automation
-- Production security configuration and secret management
+- Production security hardening beyond current env-based secrets
