@@ -362,3 +362,5 @@ README.md                   Current project documentation
 - Email, SMS, or WhatsApp order notifications
 - Role-based admin authentication
 - Production security hardening beyond current env-based secrets
+
+
